@@ -1,3 +1,8 @@
+#define SKETCH_VERSION "1.0.01"
+#define DATE_VERSION "16/01/2024 14:00:00"
+#define AUTEUR "JFS59"
+
+
 #include "RFID.h"
 #include "parseur.h"
 
