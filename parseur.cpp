@@ -21,7 +21,14 @@ const char WText_Str[] PROGMEM = "WText"; // Ecrire un bloc en texte
 const char RHexa_Str[] PROGMEM = "RHexa"; // Lire un bloc en héxadécimal
 const char DHexa_Str[] PROGMEM = "DHexa"; // Dump des blocs en héxadécimal
 
-const char *const Command_List[] PROGMEM = {NCard_Str, WHexa_Str, WDeci_Str, WText_Str, RHexa_Str, DHexa_Str};
+// opération sur Key
+
+const char KSwap_Str[] PROGMEM = "KSwap"; // Changer l'identification
+const char KUtil_Str[] PROGMEM = "KUtil"; // Modifier la clé
+const char KInit_Str[] PROGMEM = "KInit"; // Retour clé FF FF FF FF FF FF
+
+
+const char *const Command_List[] PROGMEM = {NCard_Str, WHexa_Str, WDeci_Str, WText_Str, RHexa_Str, DHexa_Str, KSwap_Str, KUtil_Str, KInit_Str};
 
 const byte NB_COMMANDS = sizeof(Command_List) / sizeof(Command_List[0]);
 
@@ -31,7 +38,10 @@ enum Command_IDs : byte {
   WDeci = 2,
   WText = 3,
   RHexa = 4,
-  DHexa = 5
+  DHexa = 5,
+  KSwap = 6,
+  KUtil = 7,
+  KInit = 8
 };
 
 //Reception commande
@@ -90,114 +100,147 @@ void ack_command(char *message)
 
 void exec_command()
 {
-
   byte bloc;
-
   switch (Command_ID)
   {
     case NCard:
-      Serial.println(F("Détecter nouvelle carte"));
-      liberer_Carte();
-      delay(500);
-      detection_Carte();
+      {
+        Serial.println(F("Détecter nouvelle carte"));
+        liberer_Carte();
+        delay(500);
+        detection_Carte();
+      }
       break;
 
     case WHexa:
-      Serial.println(F("Ecrire bloc HEXA"));
-      bloc = atoi(arg_list[1]);
-      if (autorisationBloc(bloc)) {
-        Serial.println(F("Ecriture autorisée"));
-
-        for (int i = 0; i < 16; i++) {
-          byte val = strtoul (arg_list[i + 2], nullptr, 16);
-          writeBlockData[i] = val;
+      {
+        Serial.println(F("Ecrire bloc HEXA"));
+        bloc = atoi(arg_list[1]);
+        if (autorisationBloc(bloc)) {
+          Serial.println(F("Ecriture autorisée"));
+          clear_Write_Buffer ();
+          for (int i = 0; i < 16; i++) {
+            byte val = strtoul (arg_list[i + 2], nullptr, 16);
+            writeBlockData[i] = val;
+          }
+          dump_byte_array(writeBlockData, 16);
+          // transfert et ecriture ....
+          ecrire_Bloc(bloc);
+          Serial.println(F("Relecture du bloc"));
+          lire_Bloc(bloc);
+          dump_byte_array(readBlockData, 16);
+        } else {
+          Serial.print(F("Ecriture interdite bloc : "));
+          Serial.println(bloc);
         }
-        dump_byte_array(writeBlockData, 16);
-
-        // transfert et ecriture ....
-        ecrire_Bloc(bloc);
-        Serial.println(F("Relecture du bloc"));
-        lire_Bloc(bloc);
-        dump_byte_array(readBlockData, 16);
-
-      } else {
-        Serial.print(F("Ecriture interdite bloc : "));
-        Serial.println(bloc);
       }
       break;
 
     case WDeci:
-      Serial.println(F("Ecrire bloc DECI"));
-      bloc = atoi(arg_list[1]);
-      if (autorisationBloc(bloc)) {
-        Serial.println(F("Ecriture autorisée"));
+      {
+        Serial.println(F("Ecrire bloc DECI"));
+        bloc = atoi(arg_list[1]);
+        if (autorisationBloc(bloc)) {
+          Serial.println(F("Ecriture autorisée"));
+          for (int i = 0; i < 16; i++) {
+            byte val = atoi(arg_list[i + 2]);
+            writeBlockData[i] = val;
+          }
+          dump_byte_array(writeBlockData, 16);
+          // transfert et ecriture ....
+          ecrire_Bloc(bloc);
+          Serial.println(F("Relecture du bloc"));
 
-        for (int i = 0; i < 16; i++) {
-          byte val = atoi(arg_list[i + 2]);
-          writeBlockData[i] = val;
+          lire_Bloc(bloc);
+          dump_byte_array(readBlockData, 16);
+        } else {
+          Serial.print(F("Ecriture interdite bloc : "));
+          Serial.println(bloc);
         }
-        dump_byte_array(writeBlockData, 16);
-        // transfert et ecriture ....
-        ecrire_Bloc(bloc);
-        Serial.println(F("Relecture du bloc"));
-        lire_Bloc(bloc);
-        dump_byte_array(readBlockData, 16);
-      } else {
-        Serial.print(F("Ecriture interdite bloc : "));
-        Serial.println(bloc);
       }
       break;
 
     case WText:
-      Serial.println(F("Ecrire bloc TEXT"));
-      bloc = atoi(arg_list[1]);
-      if (autorisationBloc(bloc)) {
-        Serial.println(F("Ecriture autorisée"));
-        // transfert et ecriture ....
-        for (int i = 0; i < 16; i++) {
-          writeBlockData[i] = 0;
-        }
-        dump_byte_array(writeBlockData, 16);
-        for (int i = 0; i < 16; i++) {
-          writeBlockData[i] = (byte) * arg_list[i + 2];
-        }
-        dump_byte_array(writeBlockData, 16);
-        ecrire_Bloc(bloc);
-        Serial.println(F("Relecture du bloc"));
-        lire_Bloc(bloc);
-        dump_byte_array(readBlockData, 16);
+      {
+        Serial.println(F("Ecrire bloc TEXT"));
+        bloc = atoi(arg_list[1]);
+        if (autorisationBloc(bloc)) {
+          Serial.println(F("Ecriture autorisée"));
+          // transfert et ecriture ....
+          clear_Write_Buffer ();
+          for (int i = 0; i < 16; i++) {
+            writeBlockData[i] = (byte) * arg_list[i + 2];
+          }
+          dump_byte_array(writeBlockData, 16);
+          ecrire_Bloc(bloc);
+          Serial.println(F("Relecture du bloc"));
+          lire_Bloc(bloc);
+          dump_byte_array(readBlockData, 16);
 
-      } else {
-        Serial.print(F("Ecriture interdite bloc : "));
-        Serial.println(bloc);
+        } else {
+          Serial.print(F("Ecriture interdite bloc : "));
+          Serial.println(bloc);
+        }
       }
       break;
 
     case RHexa:
-      Serial.println(F("Lecture bloc HEXA"));
-      bloc = atoi(arg_list[1]);
-      lire_Bloc(bloc);
-      dump_byte_array(readBlockData, 16);
-      break;
-
-    case DHexa:
-      Serial.println(F("Dump bloc HEXA"));
-      byte blocd = atoi(arg_list[1]);
-      byte bloca = atoi(arg_list[2]);
-      for (byte bloc = blocd; bloc < bloca + 1; bloc++) {
+      {
+        Serial.println(F("Lecture bloc HEXA"));
+        bloc = atoi(arg_list[1]);
         lire_Bloc(bloc);
         dump_byte_array(readBlockData, 16);
       }
+      break;
 
+    case DHexa:
+      {
+        Serial.println(F("Dump bloc HEXA"));
+        byte blocd = atoi(arg_list[1]);
+        byte bloca = atoi(arg_list[2]);
+        for (byte bloc = blocd; bloc < bloca + 1; bloc++) {
+          lire_Bloc(bloc);
+          dump_byte_array(readBlockData, 16);
+        }
+      }
+      break;
+
+    case KSwap:
+      {
+        Serial.print(F("Authentification avec clé: "));
+        key_util_A = !key_util_A;
+        if (key_util_A) Serial.println ("A");
+        else Serial.println ("B");
+      }
+      break;
+
+    case KUtil:
+      {
+        Serial.print(F("Modification de la clé: "));
+        for (byte i = 0; i < 6; i++)
+        {
+          byte val = strtoul (arg_list[i + 1], nullptr, 16);
+          key.keyByte[i] = val;
+        }
+        dump_byte_array(key.keyByte, 6);
+      }
+      break;
+
+    case KInit:
+      {
+        Serial.print(F("Modification de la clé: "));
+        factory_key();
+      }
       break;
 
     default :
-      Serial.print(F("Erreur commande -> "));
-      Serial.println(command_line);
+      {
+        Serial.print(F("Erreur commande -> "));
+        Serial.println(command_line);
+      }
       break;
   }
   Command_ID = -1;
-  Serial.println();
   Serial.println(F("*******************"));
   Serial.println(F("Attente nouvelle commande"));
 }
@@ -233,6 +276,7 @@ void parse_command()
     {
       Command_ID = ii;
       Serial.println("Commande autorisée");
+      //Serial.println(ii);
       break;
     }
   }
