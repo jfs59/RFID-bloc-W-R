@@ -26,9 +26,11 @@ const char DHexa_Str[] PROGMEM = "DHexa"; // Dump des blocs en héxadécimal
 const char KSwap_Str[] PROGMEM = "KSwap"; // Changer l'identification
 const char KUtil_Str[] PROGMEM = "KUtil"; // Modifier la clé
 const char KInit_Str[] PROGMEM = "KInit"; // Retour clé FF FF FF FF FF FF
+const char WFact_Str[] PROGMEM = "WFact"; // Changer factory
 
+const char WBlaz_Str[] PROGMEM = "WBlaz"; // procedure rapide
 
-const char *const Command_List[] PROGMEM = {NCard_Str, WHexa_Str, WDeci_Str, WText_Str, RHexa_Str, DHexa_Str, KSwap_Str, KUtil_Str, KInit_Str};
+const char *const Command_List[] PROGMEM = {NCard_Str, WHexa_Str, WDeci_Str, WText_Str, RHexa_Str, DHexa_Str, KSwap_Str, KUtil_Str, KInit_Str, WFact_Str,WBlaz_Str};
 
 const byte NB_COMMANDS = sizeof(Command_List) / sizeof(Command_List[0]);
 
@@ -41,7 +43,9 @@ enum Command_IDs : byte {
   DHexa = 5,
   KSwap = 6,
   KUtil = 7,
-  KInit = 8
+  KInit = 8,
+  WFact = 9,
+  WBlaz = 10
 };
 
 //Reception commande
@@ -114,10 +118,10 @@ void exec_command()
 
     case WHexa:
       {
-        Serial.println(F("Ecrire bloc HEXA"));
+        //Serial.println(F("Ecrire bloc HEXA"));
         bloc = atoi(arg_list[1]);
         if (autorisationBloc(bloc)) {
-          Serial.println(F("Ecriture autorisée"));
+          //Serial.println(F("Ecriture autorisée"));
           clear_Write_Buffer ();
           for (int i = 0; i < 16; i++) {
             byte val = strtoul (arg_list[i + 2], nullptr, 16);
@@ -126,9 +130,9 @@ void exec_command()
           dump_byte_array(writeBlockData, 16);
           // transfert et ecriture ....
           ecrire_Bloc(bloc);
-          Serial.println(F("Relecture du bloc"));
-          lire_Bloc(bloc);
-          dump_byte_array(readBlockData, 16);
+          //Serial.println(F("Relecture du bloc"));
+          //lire_Bloc(bloc);
+          //dump_byte_array(readBlockData, 16);
         } else {
           Serial.print(F("Ecriture interdite bloc : "));
           Serial.println(bloc);
@@ -233,6 +237,33 @@ void exec_command()
       }
       break;
 
+    case WFact:
+      {
+        Serial.println(F("Modification usine"));
+        lire_Bloc(0);
+        clear_Write_Buffer ();
+        for (int i = 0; i < 7; i++) {
+          writeBlockData[i] = readBlockData[i];
+        }
+        for (int i = 7; i < 16; i++) {
+          writeBlockData[i] = (byte) * arg_list[i + 1];
+        }
+        ecrire_Bloc(0);
+      }
+      break;
+
+    case WBlaz: // procedure rapide lasarus
+      {
+        bloc = atoi(arg_list[1]);
+        clear_Write_Buffer ();
+        for (int i = 0; i < 16; i++) {
+          byte val = strtoul (arg_list[i + 2], nullptr, 16);
+          writeBlockData[i] = val;
+        }
+        ecrire_Bloc(bloc);
+      }
+      break;
+
     default :
       {
         Serial.print(F("Erreur commande -> "));
@@ -241,8 +272,8 @@ void exec_command()
       break;
   }
   Command_ID = -1;
-  Serial.println(F("*******************"));
-  Serial.println(F("Attente nouvelle commande"));
+  //Serial.println(F("*******************"));
+  //Serial.println(F("Attente nouvelle commande"));
 }
 
 //Parsing identifiant commande et arguments
@@ -275,7 +306,7 @@ void parse_command()
 
     {
       Command_ID = ii;
-      Serial.println("Commande autorisée");
+      //Serial.println("Commande autorisée");
       //Serial.println(ii);
       break;
     }
