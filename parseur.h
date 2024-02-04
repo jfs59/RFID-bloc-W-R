@@ -15,4 +15,4 @@ void ack_command(char *message);
 void exec_command();
 
 //Parsing identifiant commande et arguments
-void parse_command();
+void parse_command(); 

@@ -17,7 +17,7 @@ void clear_Write_Buffer () {
 void factory_key() {
   // Prepare key - all keys are set to FFFFFFFFFFFFh at chip delivery from the factory.
   for (byte i = 0; i < 6; i++) key.keyByte[i] = 0xFF;
-  Serial.println(F("Factory Key FF FF FF FF FF FF"));
+  //Serial.println(F("Factory Key FF FF FF FF FF FF"));
 }
 
 bool autorisationBloc(byte bloc_num) {
@@ -33,8 +33,8 @@ void detection_Carte() {
 
   factory_key ();
   key_util_A = true;
-  Serial.println(F("Utilisation de la clé A"));
-  Serial.println(F("Détection d'une carte RFID"));
+  //Serial.println(F("Utilisation de la clé A"));
+  //Serial.println(F("Détection d'une carte RFID"));
 
   if ( ! mfrc522.PICC_IsNewCardPresent()) {
     Serial.println(F("Pas de nouvelle carte"));
@@ -52,13 +52,16 @@ void detection_Carte() {
     Serial.print(mfrc522.uid.uidByte[i], HEX);
   }
 
-  Serial.println("");
+  Serial.println();
   Serial.println(F("Attente de commande"));
-  Serial.println("");
+  //Serial.println("");
 }
-
-void lire_Bloc(byte numblock) {
-
+void change_Factory()
+{
+  lire_Bloc(0);
+  
+}
+  void lire_Bloc(byte numblock) {
   clear_Read_Buffer ();
 
   if (key_util_A) status = mfrc522.PCD_Authenticate(MFRC522::PICC_CMD_MF_AUTH_KEY_A, numblock, &key, &(mfrc522.uid));

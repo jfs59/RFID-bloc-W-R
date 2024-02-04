@@ -22,5 +22,5 @@ void liberer_Carte();
 
 void clear_Read_Buffer ();
 void clear_Write_Buffer ();
-
+void change_Factory();
 void dump_byte_array(byte *buffer, byte bufferSize);

@@ -204,7 +204,7 @@ void exec_command()
         byte bloca = atoi(arg_list[2]);
         for (byte bloc = blocd; bloc < bloca + 1; bloc++) {
           lire_Bloc(bloc);
-          dump_byte_array(readBlockData, 16);
+          Serial.print("* ");Serial.print(bloc);Serial.print(" ");dump_byte_array(readBlockData, 16);
         }
       }
       break;
